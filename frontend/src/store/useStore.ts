@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { Outfit, TryOnResult } from '@/types';
 import type { UserWithMeasurements } from '@/hooks/useUser';
 
+export interface PendingGarment {
+  id: string;
+  url: string;
+  category: string;
+  name: string;
+}
+
 interface AppState {
   // ─── Existing try-on state ───────────────────────────────────────────────
   userImage: string | null;
@@ -26,6 +33,12 @@ interface AppState {
   /** Public URL of the uploaded avatar photo (stored in Supabase Storage). */
   userPhotoUrl: string | null;
   setUserPhotoUrl: (url: string | null) => void;
+
+  // ─── Pending garments (Trends → Studio) ─────────────────────────────────
+  pendingGarments: PendingGarment[];
+  addPendingGarment: (g: PendingGarment) => void;
+  removePendingGarment: (id: string) => void;
+  clearPendingGarments: () => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -57,4 +70,17 @@ export const useStore = create<AppState>((set) => ({
 
   userPhotoUrl: null,
   setUserPhotoUrl: (url) => set({ userPhotoUrl: url }),
+
+  // ─── Pending garments ─────────────────────────────────────────────────────
+  pendingGarments: [],
+  addPendingGarment: (g) =>
+    set((state) => {
+      if (state.pendingGarments.some((x) => x.id === g.id)) return state;
+      return { pendingGarments: [...state.pendingGarments, g] };
+    }),
+  removePendingGarment: (id) =>
+    set((state) => ({
+      pendingGarments: state.pendingGarments.filter((g) => g.id !== id),
+    })),
+  clearPendingGarments: () => set({ pendingGarments: [] }),
 }));

@@ -49,18 +49,29 @@ export default function Header() {
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="relative px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#1a1a1a] transition-all whitespace-nowrap"
-            >
-              {link.label}
-              {'isLive' in link && link.isLive && (
-                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#bef264] rounded-full animate-pulse" />
-              )}
-            </Link>
-          ))}
+          {navLinks.map((link) =>
+            'isLive' in link && link.isLive ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#bef264]/10 border border-[#bef264]/20 text-[#bef264] text-sm font-bold hover:bg-[#bef264]/20 transition-colors"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#bef264] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#bef264]" />
+                </span>
+                {link.label}
+              </Link>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="relative px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#1a1a1a] transition-all whitespace-nowrap"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
         </div>
 
         <div className="hidden md:flex items-center">

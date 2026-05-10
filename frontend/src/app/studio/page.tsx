@@ -50,13 +50,30 @@ const FETCH_TIMEOUT_MS = 300_000;
 // ── Studio Page ───────────────────────────────────────────────────────────────
 
 export default function StudioPage() {
-  const { currentUser } = useStore();
+  const { currentUser, pendingGarments, clearPendingGarments } = useStore();
 
   const [activeTab, setActiveTab] = useState<StudioTab>("tryon");
   const [personUrl, setPersonUrl] = useState<string | null>(null);
   
   // Multi-item state
   const [garments, setGarments] = useState<GarmentItem[]>([]);
+
+  // Auto-import pending garments sent from the Trends page
+  useEffect(() => {
+    if (pendingGarments.length > 0) {
+      setGarments((prev) => {
+        const newItems: GarmentItem[] = pendingGarments
+          .filter((pg) => !prev.some((g) => g.url === pg.url))
+          .map((pg) => ({
+            id: pg.id,
+            url: pg.url,
+            category: pg.category as TryOnCategory,
+          }));
+        return [...prev, ...newItems];
+      });
+      clearPendingGarments();
+    }
+  }, [pendingGarments, clearPendingGarments]);
   
   // Add modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -315,6 +332,25 @@ export default function StudioPage() {
       </div>
 
       <div className="flex-1 px-4 md:px-6 pb-20 max-w-7xl mx-auto w-full">
+
+        {/* Anakin Intelligence Banner */}
+        <div className="mb-6 rounded-2xl border border-[#bef264]/20 bg-[#bef264]/5 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#bef264] flex items-center justify-center text-black font-black text-xs">
+              AI
+            </div>
+            <div>
+              <p className="text-white text-sm font-bold">Powered by Anakin.io Intelligence</p>
+              <p className="text-white/40 text-xs">Real products scraped live · AI fit analysis from reviews</p>
+            </div>
+          </div>
+          <a
+            href="/trends"
+            className="text-[#bef264] text-xs font-bold border border-[#bef264]/30 px-3 py-1.5 rounded-lg hover:bg-[#bef264]/10 transition-colors flex items-center gap-1"
+          >
+            🔥 See Live Trends →
+          </a>
+        </div>
 
         {/* Tab bar */}
         <div className="flex gap-2 mb-6 p-1 bg-white rounded-2xl border border-slate-100 shadow-sm w-fit">

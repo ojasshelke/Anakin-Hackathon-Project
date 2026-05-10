@@ -230,80 +230,10 @@ const FALLBACK_TRENDS: Trend[] = [
 ];
 
 // ─── POST handler ────────────────────────────────────────────────────────────
+// Returns curated fallback trends instantly. Anakin scraping only happens
+// when the user explicitly clicks "Discover" (via /api/trends/search).
 
 export async function POST(): Promise<NextResponse> {
-  // Check cache first
-  if (trendCache && Date.now() - trendCache.fetchedAt < CACHE_TTL_MS) {
-    console.log('[/api/trends] Serving from cache');
-    return NextResponse.json({ trends: trendCache.trends, cached: true });
-  }
-
-  const anakinKey = process.env.ANAKIN_API_KEY;
-  if (!anakinKey) {
-    return NextResponse.json({ trends: FALLBACK_TRENDS, cached: false, fallback: true });
-  }
-
-  // Serve fallback immediately on first load, then try live data
-  // This prevents the 14s skeleton wait
-  try {
-    console.log('[/api/trends] Scraping trend sources...');
-
-    // Race: scrape + Gemini vs a 5-second timeout that returns fallback
-    const livePromise = (async () => {
-      // Step 1: Scrape all 3 URLs in parallel
-      const scrapeResults = await Promise.allSettled(
-        TREND_SOURCES.map(url => scrapeWithAnakin(url, anakinKey))
-      );
-
-      const scrapedContent = scrapeResults
-        .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
-        .map(r => r.value)
-        .filter(Boolean)
-        .join('\n\n---\n\n');
-
-      // Step 2: Supplemental search signals
-      const searchContent = await searchTrendSignals(anakinKey);
-
-      // Step 3: Combine everything
-      const combinedContent = [scrapedContent, searchContent].filter(Boolean).join('\n\n---\n\n');
-
-      console.log(`[/api/trends] Combined content length: ${combinedContent.length} chars`);
-
-      // Step 4: Extract trends via OpenAI
-      const trends = await extractTrendsWithOpenAI(
-        combinedContent || 'No scraped content available. Use your knowledge of current 2025 Indian fashion trends.'
-      );
-
-      return trends;
-    })();
-
-    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-
-    const result = await Promise.race([livePromise, timeoutPromise]);
-
-    if (result) {
-      // Live data succeeded within 5 seconds
-      trendCache = { trends: result, fetchedAt: Date.now() };
-      console.log('[/api/trends] Serving live trends');
-      return NextResponse.json({ trends: result, cached: false });
-    }
-
-    // Timed out — serve fallback now, but let scraping continue in background to warm cache
-    console.log('[/api/trends] Timed out, serving fallback — background scrape will warm cache');
-    trendCache = { trends: FALLBACK_TRENDS, fetchedAt: Date.now() };
-
-    // Background: let livePromise resolve and update cache for next request
-    livePromise.then((trends) => {
-      trendCache = { trends, fetchedAt: Date.now() };
-      console.log('[/api/trends] Background scrape completed — cache warmed with live data');
-    }).catch(() => { /* fallback stays */ });
-
-    return NextResponse.json({ trends: FALLBACK_TRENDS, cached: false, fallback: true });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[/api/trends] ERROR:', msg, '— serving fallback trends');
-
-    trendCache = { trends: FALLBACK_TRENDS, fetchedAt: Date.now() };
-    return NextResponse.json({ trends: FALLBACK_TRENDS, cached: false, fallback: true });
-  }
+  console.log('[/api/trends] Serving curated trends (no scraping)');
+  return NextResponse.json({ trends: FALLBACK_TRENDS, cached: false, fallback: true });
 }
