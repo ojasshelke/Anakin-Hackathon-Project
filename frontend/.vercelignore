@@ -1,0 +1,12 @@
+vexa-mobile-sdk
+backend
+ai-tryon
+venv
+.venv
+requirements.txt
+render.yaml
+flatten.sh
+start_all.sh
+glb_files.csv
+master_setup.sql
+nextjs_log.txt
